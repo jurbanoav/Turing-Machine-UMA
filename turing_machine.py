@@ -86,6 +86,7 @@ incluido como referencia es microcodes/suma.json; el resto lo creas tu).
 """
 
 import json
+from pathlib import Path
 
 
 class TuringMachine:
@@ -137,7 +138,13 @@ class TuringMachine:
             config_file : ruta al JSON (ej: "microcodes/suma.json")
             registers   : enteros no negativos (ej: [3, 2])
         """
-        with open(config_file, 'r') as f:
+        # Permite ejecutar desde cualquier cwd: si la ruta es relativa y no existe,
+        # la resolvemos relativa a esta carpeta (Turing-Machine-UMA/).
+        cfg_path = Path(config_file)
+        if not cfg_path.is_absolute() and not cfg_path.is_file():
+            cfg_path = (Path(__file__).resolve().parent / cfg_path)
+
+        with open(cfg_path, 'r') as f:
             self.config = json.load(f)
 
         self.blank = self.config.get('blank_symbol', '_')
@@ -174,7 +181,7 @@ class TuringMachine:
         """
         # === GUIA LINEA A LINEA (get_state) ===
         # L1  retornar self.state  (una sola linea de codigo)
-        raise NotImplementedError("Implementa get_state: retorna self.state")
+        return self.state
 
     def get_head_pos(self) -> int:
         """
@@ -187,7 +194,7 @@ class TuringMachine:
         """
         # === GUIA LINEA A LINEA (get_head_pos) ===
         # L1  retornar self.head  (una sola linea de codigo)
-        raise NotImplementedError("Implementa get_head_pos: retorna self.head")
+        return self.head
 
     def is_halted(self) -> bool:
         """
@@ -205,7 +212,7 @@ class TuringMachine:
         # === GUIA LINEA A LINEA (is_halted) ===
         # L1  retornar True si self.state pertenece a self.halt_states, False si no
         #     Pseudocodigo: return self.state in self.halt_states
-        raise NotImplementedError("Implementa is_halted: retorna self.state in self.halt_states")
+        return self.state in self.halt_states
 
     def get_tape_window(self, center: int, width: int) -> list:
         """
@@ -270,10 +277,14 @@ class TuringMachine:
         # L6      si no:
         # L7          append self.tape[i] a resultado
         # L8  retornar resultado
-        raise NotImplementedError(
-            "Implementa get_tape_window: retorna width simbolos centrados en center, "
-            "rellenando con self.blank si el indice esta fuera de la cinta"
-        )
+        result = []
+        half = width // 2
+        for i in range(center - half, center + half + 1):
+            if i < 0 or i >= len(self.tape):
+                result.append(self.blank)
+            else:
+                result.append(self.tape[i])
+        return result
 
     def get_last_transition(self) -> dict:
         """
@@ -298,7 +309,7 @@ class TuringMachine:
         """
         # === GUIA LINEA A LINEA (get_last_transition) ===
         # L1  retornar self._last_trans  (sin modificarlo; puede ser {} al inicio)
-        raise NotImplementedError("Implementa get_last_transition: retorna self._last_trans")
+        return self._last_trans
 
     # ══════════════════════════════════════════════════════════════════════
     # METODO DE EJECUCION — el corazon de la maquina
@@ -438,8 +449,35 @@ class TuringMachine:
         # L11 si dir == 'N': no cambiar head
         # L12 self.state ← accion['next_state']   # actualizar estado AL FINAL del paso
         # L13 retornar True
-        raise NotImplementedError(
-            "Implementa step: lee tape[head], busca la transicion, "
-            "escribe, mueve el cabezal, cambia de estado. "
-            "Retorna True si se ejecuto, False si ya estaba detenida o no hay transicion."
-        )
+        if self.is_halted():
+            return False
+
+        symbol = self.tape[self.head]
+        action = self.transitions.get(self.state, {}).get(symbol)
+        if action is None:
+            return False
+
+        prev_state = self.state
+
+        self.tape[self.head] = action["write"]
+
+        self._last_trans = {
+            "from_state": prev_state,
+            "symbol_read": symbol,
+            "to_state": action["next_state"],
+            "wrote": action["write"],
+            "moved": action["move"],
+        }
+
+        move = action["move"]
+        if move == "R":
+            self.head += 1
+            if self.head >= len(self.tape):
+                self.tape.append(self.blank)
+        elif move == "L":
+            if self.head > 0:
+                self.head -= 1
+        # "N" -> no mover
+
+        self.state = action["next_state"]
+        return True
