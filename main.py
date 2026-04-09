@@ -430,8 +430,12 @@ class App:
                 # Campos de texto
                 if pygame.Rect(20, Y_INPUT + 22, 500, 32).collidepoint(mx, my):
                     self.active_field = 0
+                    # Si el usuario edita, no mostramos errores viejos hasta que cargue.
+                    self.tm_error = None
                 elif pygame.Rect(540, Y_INPUT + 22, 280, 32).collidepoint(mx, my):
                     self.active_field = 1
+                    # Si el usuario edita, no mostramos errores viejos hasta que cargue.
+                    self.tm_error = None
                 # Botones
                 elif self.btn_load.collidepoint(mx, my):
                     self._load_machine()
@@ -449,40 +453,51 @@ class App:
                     self.tape_view_shift += 1
 
             elif event.type == pygame.KEYDOWN:
+                # Tab/Enter siempre funcionan, incluso editando campos.
                 if event.key == pygame.K_TAB:
                     self.active_field = 1 - self.active_field
-                elif event.key == pygame.K_RETURN:
+                    self.tm_error = None
+                    continue
+                if event.key == pygame.K_RETURN:
                     self._load_machine()
-                elif event.key == pygame.K_f:
-                    if self.tm and not self.running and not self._safe_is_halted():
-                        self._do_step()
-                elif event.key == pygame.K_SPACE:
-                    # En el campo "Registros", el espacio es un separador válido
-                    # (parse_registers usa split). Fuera de ese campo, SPACE es play/pausa.
-                    if self.active_field == 1:
-                        self.field_regs += " "
-                    else:
-                        if self.tm and not self._safe_is_halted():
-                            self.running = not self.running
-                            self.accumulator = 0
-                elif event.key == pygame.K_r:
-                    self._load_machine()
-                elif event.key == pygame.K_UP:
-                    self.speed = min(10, self.speed + 1)
-                elif event.key == pygame.K_DOWN:
-                    self.speed = max(1, self.speed - 1)
-                else:
+                    continue
+
+                # Si el usuario está editando un campo, priorizamos la entrada de texto
+                # y desactivamos atajos (R/F/Espacio/↑/↓) para no “comerse” letras.
+                if self.active_field in (0, 1):
                     ch = event.unicode
                     if event.key == pygame.K_BACKSPACE:
                         if self.active_field == 0:
                             self.field_path = self.field_path[:-1]
                         else:
                             self.field_regs = self.field_regs[:-1]
+                        self.tm_error = None
+                    elif event.key == pygame.K_SPACE and self.active_field == 1:
+                        # En "Registros", el espacio es separador válido.
+                        self.field_regs += " "
+                        self.tm_error = None
                     elif ch and ch.isprintable():
                         if self.active_field == 0:
                             self.field_path += ch
                         else:
                             self.field_regs += ch
+                        self.tm_error = None
+                    continue
+
+                # Atajos (solo cuando NO estás escribiendo en los campos)
+                if event.key == pygame.K_f:
+                    if self.tm and not self.running and not self._safe_is_halted():
+                        self._do_step()
+                elif event.key == pygame.K_SPACE:
+                    if self.tm and not self._safe_is_halted():
+                        self.running = not self.running
+                        self.accumulator = 0
+                elif event.key == pygame.K_r:
+                    self._load_machine()
+                elif event.key == pygame.K_UP:
+                    self.speed = min(10, self.speed + 1)
+                elif event.key == pygame.K_DOWN:
+                    self.speed = max(1, self.speed - 1)
 
     # ------------------------------------------------------------------
     # Update
