@@ -317,6 +317,52 @@ class TuringMachine:
 
     def step(self) -> bool:
         """
+        Ejecuta un solo paso de la Máquina de Turing.
+        """
+        if self.is_halted():
+            return False
+
+        symbol = self.tape[self.head]
+        
+        action = self.transitions.get(self.state, {}).get(symbol)
+        
+        if action is None:
+            return False
+
+        prev_state = self.state
+        
+        self.tape[self.head] = action['write']
+        
+        self._last_trans = {
+            'from_state': prev_state,
+            'symbol_read': symbol,
+            'to_state': action['next_state'],
+            'wrote': action['write'],
+            'moved': action['move']
+        }
+        
+        direction = action['move']
+        
+        if direction == 'R':
+            self.head += 1
+            if self.head >= len(self.tape):
+                self.tape.append(self.blank)
+                
+        elif direction == 'L':
+            if self.head > 0:
+                self.head -= 1
+            else:
+                self.tape.insert(0, self.blank)
+                self.head = 0
+                
+        elif direction == 'N':
+            pass
+
+        self.state = action['next_state']
+        
+        return True
+    
+        """
         Ejecuta UN paso de la maquina de Turing.
 
         RETORNA:
