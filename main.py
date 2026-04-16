@@ -18,6 +18,7 @@ import pygame
 import sys
 import json
 import math
+import time
 
 # ---------------------------------------------------------------------------
 # Importar la clase del alumno de forma segura
@@ -224,6 +225,8 @@ class App:
         self.running    = False
         self.accumulator = 0
         self.speed      = 5
+        self.exec_start_time = None
+        self.last_run_duration_sec = None
 
         # Texto
         self.field_path  = "microcodes/suma.json"
@@ -297,6 +300,8 @@ class App:
             self.step_count = 0
             self.running    = False
             self.accumulator = 0
+            self.exec_start_time = None
+            self.last_run_duration_sec = None
             self.tt_scroll  = 0
             self.tape_view_shift = 0
             self.flashes    = []
@@ -355,9 +360,11 @@ class App:
         except NotImplementedError:
             self.tm_error = "step() aun no implementado"
             self.running = False
+            self.exec_start_time = None
         except Exception as e:
             self.tm_error = f"Error en step(): {type(e).__name__}: {e}"
             self.running = False
+            self.exec_start_time = None
 
     def _update_tt_active(self):
         try:
@@ -413,6 +420,11 @@ class App:
         except Exception:
             return {}
 
+    def _finish_run_timing(self):
+        if self.exec_start_time is not None:
+            self.last_run_duration_sec = time.perf_counter() - self.exec_start_time
+            self.exec_start_time = None
+
     # ------------------------------------------------------------------
     # Eventos
     # ------------------------------------------------------------------
@@ -445,6 +457,10 @@ class App:
                     if self.tm and not self._safe_is_halted():
                         self.running = not self.running
                         self.accumulator = 0
+                        if self.running:
+                            self.exec_start_time = time.perf_counter()
+                        else:
+                            self.exec_start_time = None
                 elif self.btn_reset.collidepoint(mx, my):
                     self._load_machine()
                 elif self.tm is not None and self.btn_tape_left.collidepoint(mx, my):
@@ -492,6 +508,10 @@ class App:
                     if self.tm and not self._safe_is_halted():
                         self.running = not self.running
                         self.accumulator = 0
+                        if self.running:
+                            self.exec_start_time = time.perf_counter()
+                        else:
+                            self.exec_start_time = None
                 elif event.key == pygame.K_r:
                     self._load_machine()
                 elif event.key == pygame.K_UP:
@@ -519,7 +539,11 @@ class App:
             if self.accumulator >= delay:
                 self.accumulator = 0
                 self._do_step()
+                if self._safe_is_halted():
+                    self._finish_run_timing()
+                    self.running = False
         elif self.running and self._safe_is_halted():
+            self._finish_run_timing()
             self.running = False
 
     # ------------------------------------------------------------------
@@ -801,6 +825,7 @@ class App:
 
         mx, my = pygame.mouse.get_pos()
         halted = self.tm is None or self._safe_is_halted()
+        cy_ctrl = Y_CONTROLS + H_CONTROLS // 2
 
         def draw_btn(rect, label, base, hov_c, disabled=False):
             hov = rect.collidepoint(mx, my) and not disabled
@@ -813,6 +838,11 @@ class App:
 
         draw_btn(self.btn_step,  "Paso  [F]",
                  C_BTN, C_BTN_HOV, disabled=(halted or self.running))
+
+        if self.last_run_duration_sec is not None:
+            tmsg = f"Tiempo ejecución: {self.last_run_duration_sec:.3f} s"
+            txt(self.screen, tmsg, self.f_sm, C_TEAL,
+                self.btn_step.left - 10, cy_ctrl, anchor="midright")
 
         if self.running:
             draw_btn(self.btn_run, "Pausar  [Espacio]",
