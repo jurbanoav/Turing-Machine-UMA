@@ -1,0 +1,52 @@
+{
+  "initial_state": "q0",
+  "halt_states": ["halt"],
+  "blank_symbol": "",
+  "transitions": {
+    "q0": {
+      "1": {"next_state": "q1", "write": "X", "move": "R"},
+      "0": {"next_state": "q_clean", "write": "", "move": "R"},
+      "": {"next_state": "halt", "write": "", "move": "N"}
+    },
+    "q1": {
+      "1": {"next_state": "q1", "write": "1", "move": "R"},
+      "0": {"next_state": "q2", "write": "0", "move": "R"}
+    },
+    "q2": {
+      "1": {"next_state": "q3", "write": "Y", "move": "R"},
+      "": {"next_state": "q_restore_M", "write": "", "move": "L"},
+      "Z": {"next_state": "q_restore_M", "write": "Z", "move": "L"}
+    },
+    "q3": {
+      "1": {"next_state": "q3", "write": "1", "move": "R"},
+      "Z": {"next_state": "q3", "write": "Z", "move": "R"},
+      "": {"next_state": "q_rtm", "write": "Z", "move": "L"}
+    },
+    "q_rtm": {
+      "Z": {"next_state": "q_rtm", "write": "Z", "move": "L"},
+      "1": {"next_state": "q_rtm", "write": "1", "move": "L"},
+      "Y": {"next_state": "q2", "write": "Y", "move": "R"}
+    },
+    "q_restore_M": {
+      "Y": {"next_state": "q_restore_M", "write": "1", "move": "L"},
+      "0": {"next_state": "q_rtn", "write": "0", "move": "L"}
+    },
+    "q_rtn": {
+      "1": {"next_state": "q_rtn", "write": "1", "move": "L"},
+      "X": {"next_state": "q0", "write": "X", "move": "R"},
+      "": {"next_state": "q0", "write": "", "move": "R"}
+    },
+    "q_clean": {
+      "1": {"next_state": "q_clean", "write": "", "move": "R"},
+      "0": {"next_state": "q_clean", "write": "", "move": "R"},
+      "X": {"next_state": "q_clean", "write": "", "move": "R"},
+      "Y": {"next_state": "q_clean", "write": "", "move": "R"},
+      "Z": {"next_state": "q_clean_Z", "write": "1", "move": "R"},
+      "": {"next_state": "halt", "write": "", "move": "N"}
+    },
+    "q_clean_Z": {
+      "Z": {"next_state": "q_clean_Z", "write": "1", "move": "R"},
+      "": {"next_state": "halt", "write": "", "move": "N"}
+    }
+  }
+}

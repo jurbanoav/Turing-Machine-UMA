@@ -1,0 +1,24 @@
+{
+    "initial_state": "ir_derecha",
+    "blank_symbol": " ",
+    "halt_states": ["halt"],
+    "transitions": {
+        "ir_derecha": {
+            "1": {"next_state": "ir_derecha", "write": "1", "move": "R"},
+            "0": {"next_state": "ir_derecha", "write": "0", "move": "R"},
+            " ": {"next_state": "verificar_derecha", "write": " ", "move": "L"}
+        },
+        "verificar_derecha": {
+            "1": {"next_state": "regresar_inicio", "write": " ", "move": "L"},
+            "0": {"next_state": "halt", "write": " ", "move": "R"}
+        },
+        "regresar_inicio": {
+            "1": {"next_state": "regresar_inicio", "write": "1", "move": "L"},
+            "0": {"next_state": "regresar_inicio", "write": "0", "move": "L"},
+            " ": {"next_state": "borrar_izquierda", "write": " ", "move": "R"}
+        },
+        "borrar_izquierda": {
+            "1": {"next_state": "ir_derecha", "write": " ", "move": "R"}
+        }
+    }
+}

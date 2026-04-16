@@ -1,0 +1,30 @@
+{
+    "initial_state": "ir_al_final_derecha",
+    "blank_symbol": " ",
+    "halt_states": ["halt"],
+    "transitions": {
+        "ir_al_final_derecha": {
+            "1": {"next_state": "ir_al_final_derecha", "write": "1", "move": "R"},
+            "0": {"next_state": "ir_al_final_derecha", "write": "0", "move": "R"},
+            " ": {"next_state": "buscar_1_derecha", "write": " ", "move": "L"}
+        },
+        "buscar_1_derecha": {
+            "1": {"next_state": "ir_al_inicio_izquierda", "write": " ", "move": "L"},
+            "0": {"next_state": "limpiar_y_terminar", "write": " ", "move": "L"}
+        },
+        "ir_al_inicio_izquierda": {
+            "1": {"next_state": "ir_al_inicio_izquierda", "write": "1", "move": "L"},
+            "0": {"next_state": "ir_al_inicio_izquierda", "write": "0", "move": "L"},
+            " ": {"next_state": "buscar_1_izquierda", "write": " ", "move": "R"}
+        },
+        "buscar_1_izquierda": {
+            "1": {"next_state": "ir_al_final_derecha", "write": " ", "move": "R"},
+            "0": {"next_state": "halt", "write": "0", "move": "N"}
+        },
+        "limpiar_y_terminar": {
+            "1": {"next_state": "limpiar_y_terminar", "write": "1", "move": "L"},
+            "0": {"next_state": "limpiar_y_terminar", "write": " ", "move": "L"},
+            " ": {"next_state": "halt", "write": " ", "move": "R"}
+        }
+    }
+}
